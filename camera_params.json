@@ -1,0 +1,21 @@
+{
+    "device": 0,
+    "scale": 0.5,
+    "path": "test",
+    "mode": 0,
+    "width": 1600.0,
+    "height": 600.0,
+    "numDisparities": 8,
+    "blockSize": 0,
+    "preFilterType": 0,
+    "preFilterSize": 8,
+    "preFilterCap": 2,
+    "textureThreshold": 50,
+    "uniquenessRatio": 30,
+    "speckleRange": 79,
+    "speckleWindowSize": 0,
+    "disp12MaxDiff": 5,
+    "minDisparity": 0,
+    "winSize": 5,
+    "threshold": 153
+}
