@@ -3,9 +3,10 @@ import json
 import glob
 import blinker
 import numpy as np
+import calibrate
 from arducam_camera import MyCamera
-from stereovision.calibration import StereoCalibrator
-from stereovision.calibration import StereoCalibration
+# from stereovision.calibration import StereoCalibrator
+# from stereovision.calibration import StereoCalibration
 
 f = open("camera_params.json", "r+")
 camera_params = json.load(f)
@@ -77,7 +78,28 @@ cv2.setTrackbarPos('LED mode', 'disp', camera_params['led_mode'])
 
 stereo = cv2.StereoBM_create()
 # stereo = cv2.StereoSGBM_create()
-backSub = cv2.createBackgroundSubtractorKNN()
+# backSub = cv2.createBackgroundSubtractorKNN()
+# block_size = 1
+# min_disp = -128
+# max_disp = 128
+
+# num_disp = max_disp - min_disp
+# uniquenessRatio = 5
+# speckleWindowSize = 200
+# speckleRange = 2
+# disp12MaxDiff = 0
+
+# stereo = cv2.StereoSGBM_create(
+# 		minDisparity=min_disp,
+# 		numDisparities=num_disp,
+# 		blockSize=block_size,
+# 		uniquenessRatio=uniquenessRatio,
+# 		speckleWindowSize=speckleWindowSize,
+# 		speckleRange=speckleRange,
+# 		disp12MaxDiff=disp12MaxDiff,
+# 		P1=8 * 1 * block_size * block_size,
+# 		P2=32 * 1 * block_size * block_size
+# 	)
 
 # cv_file = cv2.FileStorage("./params.xml", cv2.FILE_STORAGE_READ)
 # Left_Stereo_Map_x = cv_file.getNode("Left_Stereo_Map_x").mat()
@@ -86,9 +108,57 @@ backSub = cv2.createBackgroundSubtractorKNN()
 # Right_Stereo_Map_y = cv_file.getNode("Right_Stereo_Map_y").mat()
 # cv_file.release()
 
-calibration = StereoCalibration(input_folder='calib_res')
-
+# calibration = StereoCalibration(input_folder='calib_res')
+calibrate.load_parameters()
 n_file, i = len(glob.glob(f'./{path}/*.png')) // 2, 0
+
+
+def gamma_trans(img, gamma):
+	gamma_table = [np.power(x/255.0, gamma)*255.0 for x in range(256)]
+	gamma_table = np.round(np.array(gamma_table)).astype(np.uint8)
+	return cv2.LUT(img, gamma_table)
+
+def compute_disparity(rectified_l, rectified_r):
+
+	window_size = 7
+	min_disp = -16
+	max_disp = 64
+	num_disp = max_disp - min_disp
+
+	stereo = cv2.StereoSGBM_create(
+		minDisparity = min_disp,
+		numDisparities = num_disp,
+		blockSize= window_size,
+		preFilterCap=63,
+		uniquenessRatio = 15,
+		speckleWindowSize = 10,
+		speckleRange = 1,
+		disp12MaxDiff = 20,
+		P1 = 8*3*window_size**2,
+		P2 = 32*3*window_size**2,
+		mode=cv2.STEREO_SGBM_MODE_SGBM_3WAY
+	)
+
+	left_matcher = stereo
+	right_matcher = cv2.ximgproc.createRightMatcher(left_matcher)
+
+	l = 70000
+	s = 1.2
+
+	disparity_filter = cv2.ximgproc.createDisparityWLSFilter(left_matcher)
+	disparity_filter.setLambda(l)
+	disparity_filter.setSigmaColor(s)
+
+	d_l = left_matcher.compute(rectified_l, rectified_r)
+	d_r = right_matcher.compute(rectified_r, rectified_l)
+
+	d_l = np.int16(d_l)
+	d_r = np.int16(d_r)
+	
+	d_filter = disparity_filter.filter(d_l, rectified_l, None, d_r)
+
+	disparity = cv2.normalize(d_filter, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+	return disparity
 
 while True:
 	key = cv2.waitKey(1) & 0xFFFF
@@ -99,6 +169,9 @@ while True:
 
 		imgLeft = pair_img[0:img_height, 0:int(img_width/2)]
 		imgRight = pair_img[0:img_height, int(img_width/2):img_width]
+
+		# imgLeft = gamma_trans(imgLeft, 5)
+		# imgRight = gamma_trans(imgRight, 5)
 
 		if key == ord("c"):
 			n_file += 1
@@ -134,9 +207,12 @@ while True:
 	# cv2.imshow("Left image after rectification", Left_nice)
 	# cv2.imshow("Right image after rectification", Right_nice)
 
-	rectified_pair = calibration.rectify((imgLeft, imgRight))
-	rectified_pair[0] = rectified_pair[0][:img_height, :int(img_width / 2)]
-	rectified_pair[1] = rectified_pair[1][:img_height, :int(img_width / 2)]
+	# rectified_pair = calibration.rectify((imgLeft, imgRight))
+	# rectified_pair[0] = rectified_pair[0][:img_height, :int(img_width / 2)]
+	# rectified_pair[1] = rectified_pair[1][:img_height, :int(img_width / 2)]
+
+	img_left, img_right = calibrate.generate_undistored_rectified_image(imgLeft, imgRight)
+	rectified_pair = [img_left, img_right]
 
 	cv2.imshow("Left image after rectification", rectified_pair[0])
 	cv2.imshow("Right image after rectification", rectified_pair[1])
@@ -269,23 +345,30 @@ while True:
 		# cv2.imshow('FG Mask', res)
 
 	else:
-		disparity = stereo.compute(rectified_pair[0], rectified_pair[1])
+		# disparity = stereo.compute(rectified_pair[0], rectified_pair[1])
+		disparity = compute_disparity(rectified_pair[0], rectified_pair[1])
 
 		# grayscale disparity map
 		# disparity = disparity.astype(np.float32)
 		# disparity = (disparity / 16.0 - camera_params["minDisparity"]) / camera_params["numDisparities"]
-		# cv2.imshow("disparity", disparity)
+		cv2.imshow("disparity", disparity)
 
-		local_max = disparity.max()
-		local_min = disparity.min()
-		# print((local_max, local_min))
-		disparity_grayscale = (disparity-local_min) * \
-			(65535.0/(local_max-local_min))
-		disparity_fixtype = cv2.convertScaleAbs(
-			disparity_grayscale, alpha=(255.0/65535.0))
-		disparity_color = cv2.applyColorMap(
-			disparity_fixtype, cv2.COLORMAP_JET)
-		cv2.imshow("Disparity", disparity_color)
+		# local_max = disparity.max()
+		# local_min = disparity.min()
+		# # print((local_max, local_min))
+		# disparity_grayscale = (disparity-local_min) * \
+		# 	(65535.0/(local_max-local_min))
+		# disparity_fixtype = cv2.convertScaleAbs(
+		# 	disparity_grayscale, alpha=(255.0/65535.0))
+		# disparity_color = cv2.applyColorMap(
+		# 	disparity_fixtype, cv2.COLORMAP_JET)
+		# cv2.imshow("Disparity", disparity_color)
+
+		# disparity_SGBM = stereo.compute(rectified_pair[0], rectified_pair[1])
+		# disparity_SGBM = cv2.normalize(disparity_SGBM, disparity_SGBM, alpha=255,beta=0, norm_type=cv2.NORM_MINMAX)
+		# disparity_SGBM = np.uint8(disparity_SGBM)
+		# cv2.imshow("Disparity", disparity_SGBM)
+		# pass
 
 cv2.destroyAllWindows()
 camera.close_camera()

@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import blinker
 import glob
 import threading
 from arducam_camera import MyCamera
@@ -11,7 +12,7 @@ camera.open_camera()
 fmt = camera.get_framesize()
 cam_width, cam_height = camera.get_framesize()
 img_width, img_height = int(cam_width * scale), int(cam_height * scale)
-
+light = blinker.Blinker(leds=3, delay=6000, brightness=0.2)
 t = None
 
 def drawlines(img1src, img2src, lines, pts1src, pts2src):
@@ -140,6 +141,8 @@ while True:
 		t = threading.Thread(target=rectify, args=(imgLeft, imgRight))
 		t.start()
 
+	elif key == ord("l"):
+		light.lighting_toggle()
 
 	if key == ord("q"):
 		break
@@ -149,3 +152,4 @@ while True:
 
 cv2.destroyAllWindows()
 camera.close_camera()
+light.lighting_stop()

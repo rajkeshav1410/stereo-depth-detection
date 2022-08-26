@@ -18,8 +18,8 @@
     "minDisparity": 0,
     "winSize": 5,
     "threshold": 153,
-    "leds": 3,
-    "led_bright": 2,
+    "leds": 2,
+    "led_bright": 46,
     "led_delay": 796,
     "led_mode": 0
 }
