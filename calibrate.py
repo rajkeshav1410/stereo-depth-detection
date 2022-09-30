@@ -1,5 +1,5 @@
 import cv2
-# import json
+import json
 import glob
 import numpy as np
 # from stereovision.calibration import StereoCalibrator
@@ -236,8 +236,10 @@ def load_parameters():
 
 def caliberate():
 	global img_size
+	f = open("sgbm_params.json", "r+")
+	camera_params = json.load(f)
 	obj_points, img_points_l, img_points_r, ret, matrix_l, dist_l, matrix_r, dist_r = calibrate_camera(
-		'n_pairs')
+		camera_params['path'])
 	print('Camera calibrated')
 	retval, matrix_1, dist_1, matrix_2, dist_2, R, T, E, F = stereo_calibrate(
 		obj_points, img_points_l, img_points_r, img_size, matrix_l, dist_l, matrix_r, dist_r)
