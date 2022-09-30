@@ -1,11 +1,10 @@
-from email.mime import image
 import cv2
-import json
+# import json
 import glob
 import numpy as np
-from stereovision.calibration import StereoCalibrator
-from stereovision.calibration import StereoCalibration
-from stereovision.exceptions import ChessboardNotFoundError
+# from stereovision.calibration import StereoCalibrator
+# from stereovision.calibration import StereoCalibration
+# from stereovision.exceptions import ChessboardNotFoundError
 
 # def individual_calibrate(path):
 # 	global imgLeft, imgRight, obj_pts, img_ptsL, img_ptsR, new_mtxL, new_mtxR, distL, distR
@@ -261,9 +260,9 @@ if __name__ == '__main__':
 	# stereo_rectify()
 	# undistort()
 
-	# caliberate()
-	load_parameters()
-	img_left, img_right = cv2.imread('./rectified/left_01.png'), cv2.imread('./rectified/right_01.png')
-	img_left, img_right = generate_undistored_rectified_image(img_left, img_right)
-	cv2.imwrite('rleft_01.png', img_left)
-	cv2.imwrite('rright_01.png', img_right)
+	caliberate()
+	# load_parameters()
+	# img_left, img_right = cv2.imread('./rectified/left_01.png'), cv2.imread('./rectified/right_01.png')
+	# img_left, img_right = generate_undistored_rectified_image(img_left, img_right)
+	# cv2.imwrite('rleft_01.png', img_left)
+	# cv2.imwrite('rright_01.png', img_right)

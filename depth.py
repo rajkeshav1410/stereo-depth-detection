@@ -351,18 +351,18 @@ while True:
 		# grayscale disparity map
 		# disparity = disparity.astype(np.float32)
 		# disparity = (disparity / 16.0 - camera_params["minDisparity"]) / camera_params["numDisparities"]
-		cv2.imshow("disparity", disparity)
+		# cv2.imshow("disparity", disparity)
 
-		# local_max = disparity.max()
-		# local_min = disparity.min()
-		# # print((local_max, local_min))
-		# disparity_grayscale = (disparity-local_min) * \
-		# 	(65535.0/(local_max-local_min))
-		# disparity_fixtype = cv2.convertScaleAbs(
-		# 	disparity_grayscale, alpha=(255.0/65535.0))
-		# disparity_color = cv2.applyColorMap(
-		# 	disparity_fixtype, cv2.COLORMAP_JET)
-		# cv2.imshow("Disparity", disparity_color)
+		local_max = disparity.max()
+		local_min = disparity.min()
+		# print((local_max, local_min))
+		disparity_grayscale = (disparity-local_min) * \
+			(65535.0/(local_max-local_min))
+		disparity_fixtype = cv2.convertScaleAbs(
+			disparity_grayscale, alpha=(255.0/65535.0))
+		disparity_color = cv2.applyColorMap(
+			disparity_fixtype, cv2.COLORMAP_JET)
+		cv2.imshow("Disparity", disparity_color)
 
 		# disparity_SGBM = stereo.compute(rectified_pair[0], rectified_pair[1])
 		# disparity_SGBM = cv2.normalize(disparity_SGBM, disparity_SGBM, alpha=255,beta=0, norm_type=cv2.NORM_MINMAX)

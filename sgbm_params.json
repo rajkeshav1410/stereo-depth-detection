@@ -1,0 +1,22 @@
+{
+    "device": 0,
+    "scale": 0.5,
+    "path": "test/test1/img",
+    "mode": 0,
+    "width": 1600,
+    "height": 600,
+    "numDisparities": 1,
+    "blockSize": 3,
+    "preFilterCap": 63,
+    "uniquenessRatio": 15,
+    "speckleRange": 1,
+    "speckleWindowSize": 10,
+    "disp12MaxDiff": 20,
+    "minDisparity": 0,
+    "winSize": 7,
+    "threshold": 153,
+    "leds": 3,
+    "led_bright": 9,
+    "led_delay": 687,
+    "led_mode": 0
+}
