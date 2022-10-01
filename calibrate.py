@@ -6,6 +6,11 @@ import numpy as np
 # from stereovision.calibration import StereoCalibration
 # from stereovision.exceptions import ChessboardNotFoundError
 
+'''
+Previous camera calibration code
+Didn't produce accurate results
+Could be analyzed for better understanding of the working of calibration
+'''
 # def individual_calibrate(path):
 # 	global imgLeft, imgRight, obj_pts, img_ptsL, img_ptsR, new_mtxL, new_mtxR, distL, distR
 
@@ -110,7 +115,16 @@ criteria_cal = (cv2.TERM_CRITERIA_EPS + cv2.TermCriteria_MAX_ITER, 30, 0.001)
 criteria_stereo_cal = (cv2.TERM_CRITERIA_EPS +
 					   cv2.TERM_CRITERIA_MAX_ITER, 100, 1e-5)
 
-
+''' 
+Calculating the intrinsic and extrinsic parameters is done using this function.
+path is the location of the directory containing the stereo image pair for the 
+chessboard pattern. It might be absolute or relative. Using the keyboard's key C, 
+the images can be clicked in stereo sgbm.py video mode. Keep the chessboard pattern 
+in the left and right camera's field of view as you take pictures. Change the path 
+parameter in sgbm params.json to the new location where the chessboard pattern will 
+be kept as well before clicking any photos. Click atleast 15 image pair. width and 
+height are number of columns - 1 and number of rows - 1 respectively.
+'''
 def calibrate_camera(path, size=0.0254, width=9, height=6):
 	global img_size
 	o_points = np.zeros((height*width, 3), np.float32)
@@ -121,6 +135,7 @@ def calibrate_camera(path, size=0.0254, width=9, height=6):
 	img_points_l = []
 	img_points_r = []
 
+	# get the name of corresponding images as list
 	l_images = glob.glob(f'./{path}/left_*.png')
 	r_images = glob.glob(f'./{path}/right_*.png')
 
@@ -135,18 +150,23 @@ def calibrate_camera(path, size=0.0254, width=9, height=6):
 		gray_l_img = cv2.cvtColor(l_img, cv2.COLOR_BGR2GRAY)
 		gray_r_img = cv2.cvtColor(r_img, cv2.COLOR_BGR2GRAY)
 
+		# find the chessboard corners
 		l_ret, l_corners = cv2.findChessboardCorners(
 			gray_l_img, (width, height), None)
 		r_ret, r_corners = cv2.findChessboardCorners(
 			gray_r_img, (width, height), None)
 
+		#  if it found the points
 		if l_ret is True and r_ret is True:
 			obj_points.append(o_points)
 
+			# find the corners more precisely
 			corners_l = cv2.cornerSubPix(
 				gray_l_img, l_corners, (11, 11), (-1, -1), criteria_cal)
+			#  save the corrdinates on corners
 			img_points_l.append(corners_l)
 
+			# draw the corners if output is to be verified
 			l_img = cv2.drawChessboardCorners(
 				l_img, (width, height), l_corners, l_ret)
 
@@ -183,7 +203,7 @@ def rectify_stereo_camera(matrix_1, dist_1, matrix_2, dist_2, R, T):
 		matrix_1, dist_1, matrix_2, dist_2, (9, 6), R, T)
 	return [rotation_1, rotation_2, pose_1, pose_2, Q, roi_left, roi_right]
 
-
+# this function takes in left and right images and undistort and rectifies them
 def generate_undistored_rectified_image(img_left, img_right):
 	img_left_size = (img_left.shape[1], img_left.shape[0])
 	img_right_size = (img_right.shape[1], img_right.shape[0])
@@ -199,6 +219,7 @@ def generate_undistored_rectified_image(img_left, img_right):
 	return rectified_left, rectified_right
 
 
+# saving the calibrartion parameters
 def save_parameters(matrix_l, matrix_1, dist_l, dist_1, rot_1, pose_1, matrix_r, matrix_2, dist_r, dist_2, rot_2, pose_2):
 	file = cv2.FileStorage('./parameters.yml', cv2.FILE_STORAGE_WRITE)
 	file.write('matrix_l', matrix_l)
@@ -216,6 +237,7 @@ def save_parameters(matrix_l, matrix_1, dist_l, dist_1, rot_1, pose_1, matrix_r,
 	file.release()
 
 
+# load the saves calibration parameters back to main memory
 def load_parameters():
 	global matrix_l, matrix_1, dist_l, dist_1, rot_1, pose_1, matrix_r, matrix_2, dist_r, dist_2, rot_2, pose_2
 	file = cv2.FileStorage('./parameters.yml', cv2.FILE_STORAGE_READ)
@@ -233,7 +255,7 @@ def load_parameters():
 	pose_2 = file.getNode('pose_2').mat()
 	file.release()
 
-
+# driver code
 def caliberate():
 	global img_size
 	f = open("sgbm_params.json", "r+")
@@ -253,6 +275,7 @@ def caliberate():
 
 
 if __name__ == '__main__':
+	# old version
 	# global rows, cols, square_size, img_size
 	# rows, cols, square_size = 6, 9, 1
 	# simple_calibrate('./n_pairs')
@@ -262,7 +285,10 @@ if __name__ == '__main__':
 	# stereo_rectify()
 	# undistort()
 
+	# new version
 	caliberate()
+
+	# calibration testing
 	# load_parameters()
 	# img_left, img_right = cv2.imread('./rectified/left_01.png'), cv2.imread('./rectified/right_01.png')
 	# img_left, img_right = generate_undistored_rectified_image(img_left, img_right)
